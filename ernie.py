@@ -1,5 +1,5 @@
 import streamlit as st
-from transformers import pipeline
+import requests
 
 # ---- Streamlit UI ----
 st.set_page_config(page_title="Ernie, the Friendly Neighborhood Companion")
@@ -10,11 +10,20 @@ st.markdown("---")
 st.markdown("⚠️ **Disclaimer**: Ernie is not a licensed therapist or medical professional. He provides general emotional support and is not a substitute for professional mental health care. If you're in crisis, please reach out to a qualified mental health provider or a local support line.")
 st.markdown("---")
 
-# ---- Load Model ----
-chatbot = pipeline("text-generation", model="microsoft/DialoGPT-medium")
+# ---- HuggingFace API Setup ----
+API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
+HF_TOKEN = st.secrets["HF_TOKEN"]  # store your token securely in Streamlit secrets
+
+headers = {
+    "Authorization": f"Bearer {HF_TOKEN}"
+}
 
 # ---- User Input ----
 user_input = st.text_area("You:", placeholder="I'm feeling overwhelmed... or maybe just tired.")
+
+def query(payload):
+    response = requests.post(API_URL, headers=headers, json=payload)
+    return response.json()
 
 if st.button("Talk to Ernie"):
     if not user_input:
@@ -25,7 +34,10 @@ if st.button("Talk to Ernie"):
             if any(keyword in user_input.lower() for keyword in diagnosis_keywords):
                 st.markdown("**Ernie:** I'm really glad you're opening up. But just to be safe, it's best to consult a licensed mental health professional for any kind of diagnosis. I'm here to support, not to label. ❤️")
             else:
-                result = chatbot(user_input, max_length=100, pad_token_id=50256)
-                st.markdown("**Ernie:** " + result[0]["generated_text"])
+                output = query({"inputs": user_input})
+                if "generated_text" in output[0]:
+                    st.markdown("**Ernie:** " + output[0]["generated_text"])
+                else:
+                    st.markdown("**Ernie:** Sorry, I’m having trouble understanding that. Try rephrasing?")
         except Exception as e:
             st.error(f"Something went wrong: {e}")
