@@ -1,5 +1,5 @@
 import streamlit as st
-from transformers import pipeline, Conversation
+from transformers import pipeline
 
 # ---- Streamlit UI ----
 st.set_page_config(page_title="Ernie, the Friendly Neighborhood Companion")
@@ -10,8 +10,8 @@ st.markdown("---")
 st.markdown("⚠️ **Disclaimer**: Ernie is not a licensed therapist or medical professional. He provides general emotional support and is not a substitute for professional mental health care. If you're in crisis, please reach out to a qualified mental health provider or a local support line.")
 st.markdown("---")
 
-# ---- Load Hugging Face Model ----
-chatbot = pipeline("conversational", model="microsoft/DialoGPT-medium")
+# ---- Load Model ----
+chatbot = pipeline("text-generation", model="microsoft/DialoGPT-medium")
 
 # ---- User Input ----
 user_input = st.text_area("You:", placeholder="I'm feeling overwhelmed... or maybe just tired.")
@@ -21,23 +21,11 @@ if st.button("Talk to Ernie"):
         st.warning("Go ahead, type something in.")
     else:
         try:
-            # --- Keyword Filter for Diagnosis Questions ---
-            diagnosis_keywords = [
-                "what is wrong with me", "do i have", "am i depressed", "is this anxiety",
-                "do you think i have", "could it be", "what disorder is this", "diagnose", "diagnosis"
-            ]
-            lower_input = user_input.lower()
-
-            if any(keyword in lower_input for keyword in diagnosis_keywords):
-                st.markdown(
-                    "**Ernie:** ⚠️ I'm really glad you shared that. While I can offer emotional support and helpful information, "
-                    "I'm not qualified to provide a diagnosis. It's important to speak with a licensed mental health professional "
-                    "who can guide you with care and expertise."
-                )
+            diagnosis_keywords = ["diagnose", "diagnosis", "what is wrong", "what condition", "am I depressed", "do I have"]
+            if any(keyword in user_input.lower() for keyword in diagnosis_keywords):
+                st.markdown("**Ernie:** I'm really glad you're opening up. But just to be safe, it's best to consult a licensed mental health professional for any kind of diagnosis. I'm here to support, not to label. ❤️")
             else:
-                conversation = Conversation(user_input)
-                response = chatbot(conversation)
-                st.markdown("**Ernie:** " + conversation.generated_responses[-1])
-
+                result = chatbot(user_input, max_length=100, pad_token_id=50256)
+                st.markdown("**Ernie:** " + result[0]["generated_text"])
         except Exception as e:
             st.error(f"Something went wrong: {e}")
