@@ -1,14 +1,17 @@
 import streamlit as st
-import os
-import openai
-import pickle
-import faiss
+from transformers import pipeline
 
 # ---- Streamlit UI ----
-st.set_page_config(page_title="Ernie, the Friendly Neighborhood Doctor")
-st.title("🧸 Ernie, the Friendly Neighborhood Doctor")
+st.set_page_config(page_title="Ernie, the Friendly Neighborhood Companion")
+st.title("🧸 Ernie, the Friendly Neighborhood Companion")
 st.markdown("Welcome to Ernie — a warm, emotionally intelligent support bot. He doesn’t judge. He doesn’t rush. He just listens and responds with grounded compassion.")
 st.markdown("_Think of him as your brain’s weighted blanket._ 🧠🧸")
+st.markdown("---")
+st.markdown("⚠️ **Disclaimer**: Ernie is not a licensed therapist or medical professional. He provides general emotional support and is not a substitute for professional mental health care. If you're in crisis, please reach out to a qualified mental health provider or a local support line.")
+st.markdown("---")
+
+# ---- Load Hugging Face Model ----
+chatbot = pipeline("conversational", model="microsoft/DialoGPT-medium")
 
 # ---- User Input ----
 user_input = st.text_area("You:", placeholder="I'm feeling overwhelmed... or maybe just tired.")
@@ -18,20 +21,10 @@ if st.button("Talk to Ernie"):
         st.warning("Go ahead, type something in.")
     else:
         try:
-            openai.api_key = os.getenv("OPENAI_API_KEY")
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are Ernie, the Friendly Neighborhood Doctor. You are a gentle, emotionally intelligent support bot trained on mental health literature. "
-                            "You are not a therapist. You offer empathy, insights, grounding techniques, and emotional regulation tools. Never diagnose. Never prescribe. Just help the user feel seen and safe."
-                        ),
-                    },
-                    {"role": "user", "content": user_input},
-                ]
-            )
-            st.markdown("**Ernie:** " + response.choices[0].message["content"])
+            from transformers import Conversation
+            conversation = Conversation(user_input)
+            response = chatbot(conversation)
+            st.markdown("**Ernie:** " + conversation.generated_responses[-1])
         except Exception as e:
             st.error(f"Something went wrong: {e}")
+
